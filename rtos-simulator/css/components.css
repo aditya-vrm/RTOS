@@ -1,0 +1,438 @@
+/* =========================================================
+   components.css — Reusable UI Component Styles
+   Gantt chart rows, task pills, scheduler algo cards,
+   progress bars, and interactive widget states.
+   ========================================================= */
+
+/* ── 1. Gantt Chart SVG Styles ───────────────────────────── */
+.gantt-svg {
+  display: block;
+  font-family: var(--font-mono);
+}
+
+/* Task label column background */
+.gantt-label-bg {
+  fill: var(--clr-bg-raised);
+}
+
+/* Row background alternation */
+.gantt-row-even { fill: var(--clr-bg-card); }
+.gantt-row-odd  { fill: #191e35; }
+
+/* Execution block */
+.gantt-block {
+  rx: 4px;
+  ry: 4px;
+  transition: opacity 0.15s;
+}
+.gantt-block:hover { opacity: 0.85; cursor: pointer; }
+
+/* Idle block */
+.gantt-idle-block {
+  fill: var(--clr-bg-raised);
+  stroke: var(--clr-border);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+
+/* Deadline triangle marker */
+.gantt-deadline-marker {
+  fill: var(--clr-accent-red);
+  opacity: 0.9;
+}
+
+/* Release marker (vertical line) */
+.gantt-release-line {
+  stroke: var(--clr-text-muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+}
+
+/* Time axis */
+.gantt-axis-line { stroke: var(--clr-border); stroke-width: 1; }
+.gantt-tick      { stroke: var(--clr-border); stroke-width: 1; }
+.gantt-tick-label {
+  fill: var(--clr-text-muted);
+  font-size: 9px;
+  text-anchor: middle;
+}
+.gantt-task-label {
+  fill: var(--clr-text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  dominant-baseline: middle;
+}
+.gantt-block-label {
+  fill: rgba(255,255,255,0.9);
+  font-size: 9px;
+  font-weight: 600;
+  dominant-baseline: middle;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+/* Preemption marker (small triangle on block) */
+.gantt-preempt-mark {
+  fill: var(--clr-accent-amber);
+}
+
+/* ── 2. Legend ───────────────────────────────────────────── */
+.gantt-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--clr-border);
+  background: var(--clr-bg-raised);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--clr-text-secondary);
+}
+
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legend-swatch-idle {
+  background: var(--clr-bg-raised);
+  border: 1px dashed var(--clr-border);
+}
+
+.legend-swatch-miss {
+  background: var(--clr-accent-red);
+  opacity: 0.8;
+}
+
+/* ── 3. Algorithm Selection Cards ───────────────────────── */
+.algo-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.algo-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-out);
+  background: var(--clr-bg-card);
+  position: relative;
+  overflow: hidden;
+}
+
+.algo-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--clr-accent-primary);
+  opacity: 0;
+  transition: opacity var(--dur-fast);
+}
+
+.algo-card:hover {
+  border-color: var(--clr-border-focus);
+  background: var(--clr-bg-raised);
+}
+
+.algo-card.selected {
+  border-color: var(--clr-accent-primary);
+  background: rgba(77,110,245,0.05);
+  box-shadow: 0 0 0 1px rgba(77,110,245,0.2);
+}
+
+.algo-card.selected::before { opacity: 1; }
+
+.algo-radio {
+  /* visually hidden, functional */
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.algo-card-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--clr-border);
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: border-color var(--dur-fast), background var(--dur-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.algo-card.selected .algo-card-dot {
+  border-color: var(--clr-accent-primary);
+  background: var(--clr-accent-primary);
+}
+
+.algo-card.selected .algo-card-dot::after {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: white;
+}
+
+.algo-card-body { flex: 1; }
+
+.algo-card-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--clr-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: 2px;
+}
+
+.algo-card-desc {
+  font-size: var(--text-xs);
+  color: var(--clr-text-secondary);
+  line-height: 1.5;
+}
+
+.algo-badge {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.algo-badge-np { background: rgba(0,210,255,0.1); color: var(--clr-accent-cyan); }
+.algo-badge-p  { background: rgba(243,156,18,0.1); color: var(--clr-accent-amber); }
+.algo-badge-rt { background: rgba(155,89,182,0.1); color: var(--clr-accent-purple); }
+
+/* ── 4. Task List Rows — Action Buttons ─────────────────── */
+.task-actions {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.task-action-btn {
+  padding: 3px 7px;
+  font-size: 10px;
+  border-radius: 4px;
+  font-weight: 500;
+  border: 1px solid var(--clr-border);
+  background: var(--clr-bg-input);
+  color: var(--clr-text-secondary);
+  transition: all var(--dur-fast);
+  cursor: pointer;
+}
+
+.task-action-btn:hover { background: var(--clr-bg-card); color: var(--clr-text-primary); }
+.task-action-btn.edit:hover  { border-color: var(--clr-accent-primary); color: var(--clr-accent-primary); }
+.task-action-btn.delete:hover { border-color: var(--clr-accent-red); color: var(--clr-accent-red); }
+
+/* ── 5. Progress / Utilization Bar ─────────────────────── */
+.utilization-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.utilization-bar-track {
+  height: 8px;
+  background: var(--clr-bg-input);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--clr-border);
+}
+
+.utilization-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--clr-accent-primary), var(--clr-accent-cyan));
+  transition: width var(--dur-slow) var(--ease-out);
+  width: 0%;
+}
+
+.utilization-bar-fill.warn  { background: linear-gradient(90deg, var(--clr-accent-amber), #f1c40f); }
+.utilization-bar-fill.over  { background: linear-gradient(90deg, var(--clr-accent-red), #c0392b); }
+
+.utilization-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--clr-text-muted);
+  font-family: var(--font-mono);
+}
+
+/* ── 6. Simulation Clock Display ────────────────────────── */
+.sim-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.sim-clock-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--clr-accent-primary);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.sim-clock-label {
+  font-size: var(--text-xs);
+  color: var(--clr-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── 7. Info / Warning Callout Boxes ────────────────────── */
+.callout {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+}
+
+.callout-info {
+  background: rgba(77,110,245,0.07);
+  border: 1px solid rgba(77,110,245,0.2);
+  color: var(--clr-text-secondary);
+  border-left: 3px solid var(--clr-accent-primary);
+}
+
+.callout-warn {
+  background: rgba(243,156,18,0.07);
+  border: 1px solid rgba(243,156,18,0.2);
+  color: var(--clr-text-secondary);
+  border-left: 3px solid var(--clr-accent-amber);
+}
+
+.callout-icon { flex-shrink: 0; font-size: 0.9rem; }
+
+/* ── 8. Keyboard Shortcut Key ───────────────────────────── */
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 5px;
+  background: var(--clr-bg-raised);
+  border: 1px solid var(--clr-border);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--clr-text-muted);
+  box-shadow: inset 0 -1px 0 var(--clr-border);
+  white-space: nowrap;
+}
+
+/* ── 9. Collapsible Section Toggle ──────────────────────── */
+.collapsible-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  user-select: none;
+  color: var(--clr-text-secondary);
+  font-size: var(--text-xs);
+  transition: color var(--dur-fast);
+}
+
+.collapsible-toggle:hover { color: var(--clr-text-primary); }
+
+.collapsible-arrow {
+  display: inline-block;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+.collapsible-toggle[aria-expanded="true"] .collapsible-arrow {
+  transform: rotate(90deg);
+}
+
+.collapsible-body {
+  overflow: hidden;
+  transition: max-height var(--dur-slow) var(--ease-out), opacity var(--dur-base);
+  max-height: 0;
+  opacity: 0;
+}
+
+.collapsible-body.open {
+  max-height: 800px;
+  opacity: 1;
+}
+
+/* ── 10. Step Indicator (phase progress) ────────────────── */
+.phase-steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  font-size: var(--text-xs);
+}
+
+.phase-step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--clr-text-muted);
+  font-size: var(--text-xs);
+}
+
+.phase-step.active { color: var(--clr-accent-primary); font-weight: 600; }
+.phase-step.done   { color: var(--clr-accent-green); }
+
+.phase-step-num {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.phase-step.done .phase-step-num {
+  background: var(--clr-accent-green);
+  color: var(--clr-text-inverse);
+  border-color: var(--clr-accent-green);
+}
+
+.phase-connector {
+  height: 1px;
+  width: 20px;
+  background: var(--clr-border);
+  flex-shrink: 0;
+}
+
+/* ── 11. Skeleton loading state ─────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, var(--clr-bg-raised) 25%, var(--clr-bg-card) 50%, var(--clr-bg-raised) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

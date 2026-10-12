@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- SEO -->
+  <title>RTOS Task Scheduling Simulator</title>
+  <meta name="description"
+    content="An interactive, browser-based Real-Time Operating System scheduling simulator. Define tasks, choose FCFS, Fixed-Priority, or RMS algorithms, and analyse deadline behaviour with a Gantt chart." />
+  <meta name="keywords"
+    content="RTOS, real-time, scheduling, FCFS, rate monotonic, RMS, EDF, Gantt chart, OS simulator" />
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+</head>
+
+<body>
+<div id="app">
+
+  <!-- ══════════════════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════════════════ -->
+  <header class="app-header" role="banner">
+    <div class="header-brand">
+      <div class="header-logo" aria-hidden="true">⚙</div>
+      <div>
+        <h1 class="header-title">RTOS Scheduler</h1>
+        <p class="header-subtitle">Real-Time Task Scheduling Simulator</p>
+      </div>
+    </div>
+
+    <div class="header-controls">
+      <!-- Simulation status indicator -->
+      <div id="status-indicator"
+           class="status-indicator idle"
+           role="status"
+           aria-live="polite"
+           aria-label="Simulation status">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="status-text">Idle</span>
+      </div>
+
+      <!-- Global reset -->
+      <button id="btn-global-reset"
+              class="btn btn-ghost"
+              title="Reset simulation and clear all tasks (R)"
+              aria-label="Reset everything">
+        ↺ Reset All
+      </button>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════
+       MAIN CONTENT
+  ══════════════════════════════════════════════════ -->
+  <main class="app-main" role="main">
+
+    <!-- ─────────────────────────────────────────────
+         LEFT COLUMN — A: Task Configuration Form
+    ──────────────────────────────────────────────── -->
+    <section class="panel section-task-config" aria-labelledby="task-config-heading">
+      <div class="panel-header">
+        <div class="panel-header-left">
+          <span class="panel-icon" aria-hidden="true">📋</span>
+          <h2 class="panel-title" id="task-config-heading">Task Configuration</h2>
+        </div>
+        <button id="btn-load-examples"
+                class="btn btn-ghost"
+                style="font-size: var(--text-xs); padding: 4px 10px;"
+                title="Load a set of example tasks">
+          ✦ Load Examples
+        </button>
+      </div>
+
+      <div class="panel-body">
+        <form id="task-form" novalidate autocomplete="off">
+
+          <!-- Row 1: Name + Priority -->
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="input-task-name">
+                Task Name <span aria-hidden="true" style="color:var(--clr-accent-red)">*</span>
+              </label>
+              <input type="text"
+                     id="input-task-name"
+                     class="form-input"
+                     placeholder="e.g. T1"
+                     maxlength="12"
+                     required
+                     aria-describedby="err-task-name" />
+              <span id="err-task-name" class="form-error" role="alert"></span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="input-priority">
+                <abbr title="Used by Fixed-Priority scheduling. Lower number = higher priority.">Priority</abbr>
+              </label>
+              <input type="number"
+                     id="input-priority"
+                     class="form-input"
+                     placeholder="1"
+                     min="1"
+                     max="99"
+                     value="1"
+                     aria-describedby="err-priority hint-priority" />
+              <span id="hint-priority" class="form-hint">1 = highest</span>
+              <span id="err-priority" class="form-error" role="alert"></span>
+            </div>
+          </div>
+
+          <!-- Row 2: Execution Time + Period -->
+          <div class="form-row mt-3">
+            <div class="form-group">
+              <label class="form-label" for="input-exec-time">
+                Exec. Time (C) <span aria-hidden="true" style="color:var(--clr-accent-red)">*</span>
+              </label>
+              <input type="number"
+                     id="input-exec-time"
+                     class="form-input"
+                     placeholder="e.g. 3"
+                     min="1"
+                     max="100"
+                     required
+                     aria-describedby="err-exec-time hint-exec" />
+              <span id="hint-exec" class="form-hint">CPU units needed</span>
+              <span id="err-exec-time" class="form-error" role="alert"></span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="input-period">
+                Period (T)
+              </label>
+              <input type="number"
+                     id="input-period"
+                     class="form-input"
+                     placeholder="e.g. 8"
+                     min="1"
+                     max="1000"
+                     aria-describedby="err-period hint-period" />
+              <span id="hint-period" class="form-hint">Leave blank for one-shot</span>
+              <span id="err-period" class="form-error" role="alert"></span>
+            </div>
+          </div>
+
+          <!-- Row 3: Arrival Time + Deadline -->
+          <div class="form-row mt-3">
+            <div class="form-group">
+              <label class="form-label" for="input-arrival">
+                Arrival / Release (r₀)
+              </label>
+              <input type="number"
+                     id="input-arrival"
+                     class="form-input"
+                     placeholder="0"
+                     min="0"
+                     max="1000"
+                     value="0"
+                     aria-describedby="err-arrival" />
+              <span id="err-arrival" class="form-error" role="alert"></span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="input-deadline">
+                Rel. Deadline (D)
+              </label>
+              <input type="number"
+                     id="input-deadline"
+                     class="form-input"
+                     placeholder="= Period"
+                     min="1"
+                     max="1000"
+                     aria-describedby="err-deadline hint-deadline" />
+              <span id="hint-deadline" class="form-hint">Defaults to period (D = T)</span>
+              <span id="err-deadline" class="form-error" role="alert"></span>
+            </div>
+          </div>
+
+          <!-- Validation callout (hidden until triggered) -->
+          <div id="form-callout"
+               class="callout callout-warn mt-3"
+               style="display:none;"
+               role="alert"
+               aria-live="assertive">
+            <span class="callout-icon">⚠</span>
+            <span id="form-callout-msg"></span>
+          </div>
+
+          <!-- Action buttons -->
+          <div class="btn-group mt-4">
+            <button type="submit"
+                    id="btn-add-task"
+                    class="btn btn-primary"
+                    style="flex:1;">
+              + Add Task
+            </button>
+            <button type="button"
+                    id="btn-update-task"
+                    class="btn btn-amber"
+                    style="flex:1; display:none;">
+              ✎ Update Task
+            </button>
+            <button type="button"
+                    id="btn-cancel-edit"
+                    class="btn btn-ghost"
+                    style="display:none;">
+              ✕ Cancel
+            </button>
+          </div>
+
+        </form>
+
+        <!-- Priority convention note -->
+        <div class="callout callout-info mt-4">
+          <span class="callout-icon">ℹ</span>
+          <span>
+            <strong>Priority convention:</strong> A <em>lower</em> numeric value means
+            <em>higher</em> priority (i.e., priority 1 beats priority 2).
+            RMS auto-assigns priorities based on period — shorter period = higher priority.
+            Ties are broken by earlier arrival, then by task ID.
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────
+         RIGHT TOP — B: Scheduler Configuration
+    ──────────────────────────────────────────────── -->
+    <section class="panel section-scheduler" aria-labelledby="scheduler-heading">
+      <div class="panel-header">
+        <div class="panel-header-left">
+          <span class="panel-icon" aria-hidden="true">🎛</span>
+          <h2 class="panel-title" id="scheduler-heading">Scheduler Configuration</h2>
+        </div>
+        <span id="algo-active-badge" class="algo-tag">—</span>
+      </div>
+
+      <div class="panel-body">
+
+        <!-- Algorithm selection -->
+        <fieldset style="border:none; padding:0; margin:0;" aria-labelledby="algo-heading">
+          <legend id="algo-heading" class="form-label" style="margin-bottom: var(--space-3);">
+            Scheduling Algorithm
+          </legend>
+          <div class="algo-cards" role="radiogroup" aria-label="Scheduling algorithm">
+
+            <!-- FCFS -->
+            <label class="algo-card selected" for="algo-fcfs" id="algo-card-fcfs">
+              <input type="radio" id="algo-fcfs" name="algorithm" value="fcfs"
+                     class="algo-radio" checked />
+              <div class="algo-card-dot"></div>
+              <div class="algo-card-body">
+                <div class="algo-card-name">
+                  FCFS
+                  <span class="algo-badge algo-badge-np">Non-Preemptive</span>
+                </div>
+                <div class="algo-card-desc">
+                  First-Come First-Served. Jobs execute in arrival order to completion.
+                  Does not guarantee deadlines.
+                </div>
+              </div>
+            </label>
+
+            <!-- Fixed Priority Preemptive -->
+            <label class="algo-card" for="algo-fp" id="algo-card-fp">
+              <input type="radio" id="algo-fp" name="algorithm" value="fp"
+                     class="algo-radio" />
+              <div class="algo-card-dot"></div>
+              <div class="algo-card-body">
+                <div class="algo-card-name">
+                  Fixed-Priority Preemptive
+                  <span class="algo-badge algo-badge-p">Preemptive</span>
+                </div>
+                <div class="algo-card-desc">
+                  Higher-priority jobs preempt lower-priority running jobs.
+                  Uses the Priority field you set per task.
+                </div>
+              </div>
+            </label>
+
+            <!-- RMS -->
+            <label class="algo-card" for="algo-rms" id="algo-card-rms">
+              <input type="radio" id="algo-rms" name="algorithm" value="rms"
+                     class="algo-radio" />
+              <div class="algo-card-dot"></div>
+              <div class="algo-card-body">
+                <div class="algo-card-name">
+                  Rate Monotonic (RMS)
+                  <span class="algo-badge algo-badge-rt">Periodic · Preemptive</span>
+                </div>
+                <div class="algo-card-desc">
+                  Priority assigned by period: shorter period → higher priority.
+                  Optimal for fixed-priority periodic scheduling.
+                </div>
+              </div>
+            </label>
+
+            <!-- EDF -->
+            <label class="algo-card" for="algo-edf" id="algo-card-edf">
+              <input type="radio" id="algo-edf" name="algorithm" value="edf"
+                     class="algo-radio" />
+              <div class="algo-card-dot"></div>
+              <div class="algo-card-body">
+                <div class="algo-card-name">
+                  Earliest Deadline First (EDF)
+                  <span class="algo-badge algo-badge-p">Dynamic · Preemptive</span>
+                </div>
+                <div class="algo-card-desc">
+                  Always runs the job with the nearest absolute deadline.
+                  Optimal for utilisation ≤ 100 % on a uniprocessor.
+                </div>
+              </div>
+            </label>
+
+          </div>
+        </fieldset>
+
+        <div class="section-divider"></div>
+
+        <!-- Simulation horizon -->
+        <div class="form-group">
+          <label class="form-label" for="input-horizon">
+            Simulation Horizon (time units)
+          </label>
+          <div class="sim-horizon-group">
+            <input type="number"
+                   id="input-horizon"
+                   class="form-input sim-horizon-input"
+                   value="50"
+                   min="5"
+                   max="500"
+                   aria-describedby="hint-horizon" />
+            <span id="hint-horizon" class="form-hint">Max clock ticks to simulate</span>
+          </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Playback controls -->
+        <div class="sim-controls" role="group" aria-label="Simulation controls">
+          <!-- Primary action -->
+          <button id="btn-start"
+                  class="btn btn-success"
+                  title="Run simulation (Space)"
+                  aria-label="Start simulation">
+            ▶ Start
+          </button>
+
+          <button id="btn-pause"
+                  class="btn btn-amber"
+                  title="Pause simulation (P)"
+                  aria-label="Pause simulation"
+                  disabled>
+            ⏸ Pause
+          </button>
+
+          <button id="btn-step"
+                  class="btn btn-ghost"
+                  title="Advance one time unit (→)"
+                  aria-label="Step simulation">
+            ⏭ Step
+          </button>
+
+          <button id="btn-reset-sim"
+                  class="btn btn-ghost"
+                  title="Reset simulation (Backspace)"
+                  aria-label="Reset simulation">
+            ↺ Reset
+          </button>
+
+          <!-- Speed control -->
+          <div class="sim-speed-group">
+            <span class="sim-speed-label" id="speed-label">Speed:</span>
+            <input type="range"
+                   id="speed-slider"
+                   class="sim-speed-slider"
+                   min="1"
+                   max="5"
+                   value="3"
+                   aria-labelledby="speed-label"
+                   aria-valuetext="Normal" />
+            <span id="speed-value"
+                  class="form-hint"
+                  aria-live="polite">Normal</span>
+          </div>
+        </div>
+
+        <!-- Sim clock display -->
+        <div class="mt-4"
+             style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-4);">
+          <div class="sim-clock" aria-live="polite" aria-label="Current simulation time">
+            <div class="sim-clock-value" id="sim-clock-display">t = 0</div>
+            <div class="sim-clock-label">Current Time</div>
+          </div>
+          <div style="font-size:var(--text-xs); color:var(--clr-text-muted); line-height:1.8;">
+            <div><kbd>Space</kbd> Start / Pause</div>
+            <div><kbd>→</kbd> Step · <kbd>R</kbd> Reset</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────
+         LEFT LOWER — Task List Table
+    ──────────────────────────────────────────────── -->
+    <section class="panel section-task-list" aria-labelledby="task-list-heading">
+      <div class="panel-header">
+        <div class="panel-header-left">
+          <span class="panel-icon" aria-hidden="true">📌</span>
+          <h2 class="panel-title" id="task-list-heading">Defined Tasks</h2>
+        </div>
+        <span id="task-count-badge" class="panel-badge">0 tasks</span>
+      </div>
+
+      <div class="panel-body-scroll">
+        <div class="task-table-wrapper">
+          <table class="task-table" id="task-table" aria-label="Defined RTOS tasks">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col" title="Worst-Case Execution Time">C</th>
+                <th scope="col" title="Period">T</th>
+                <th scope="col" title="Relative Deadline">D</th>
+                <th scope="col" title="First Release Time">r₀</th>
+                <th scope="col" title="Priority (1=highest)">Pri</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="task-table-body">
+              <tr id="task-table-empty-row">
+                <td colspan="7" class="task-table-empty">
+                  No tasks defined yet.<br/>
+                  Add a task above or click <strong>Load Examples</strong>.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────
+         RIGHT MID — C: Execution Timeline (Gantt)
+    ──────────────────────────────────────────────── -->
+    <section class="panel section-timeline" aria-labelledby="timeline-heading">
+      <div class="panel-header">
+        <div class="panel-header-left">
+          <span class="panel-icon" aria-hidden="true">📊</span>
+          <h2 class="panel-title" id="timeline-heading">Execution Timeline</h2>
+        </div>
+        <div style="display:flex; gap:var(--space-2); align-items:center;">
+          <span id="timeline-algo-badge" class="algo-tag" style="font-size:10px;">—</span>
+          <button id="btn-export-svg"
+                  class="btn btn-ghost"
+                  style="font-size:var(--text-xs); padding:3px 9px; display:none;"
+                  title="Download Gantt chart as SVG">
+            ↓ Export SVG
+          </button>
+        </div>
+      </div>
+
+      <!-- Gantt chart output -->
+      <div id="gantt-container" class="gantt-container" role="img" aria-label="Gantt chart timeline">
+        <div class="gantt-placeholder" id="gantt-placeholder">
+          <div class="gantt-placeholder-icon" aria-hidden="true">📈</div>
+          <div class="gantt-placeholder-text">
+            Run the simulation to see<br/>the Gantt chart here.
+          </div>
+        </div>
+        <!-- SVG is injected here by visualization.js -->
+      </div>
+
+      <!-- Gantt legend (hidden until simulation runs) -->
+      <div id="gantt-legend" class="gantt-legend" style="display:none;" aria-label="Gantt chart legend">
+        <div class="legend-item">
+          <div class="legend-swatch legend-swatch-idle"></div>
+          <span>CPU Idle</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch"
+               style="background:var(--clr-accent-red); opacity:0.7; width:2px; height:12px; border-radius:1px;"></div>
+          <span>Deadline (▼)</span>
+        </div>
+        <div id="gantt-legend-tasks" style="display:contents;"></div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────
+         RIGHT LOWER — D: Results & Metrics
+    ──────────────────────────────────────────────── -->
+    <section class="panel section-results" aria-labelledby="results-heading">
+      <div class="panel-header">
+        <div class="panel-header-left">
+          <span class="panel-icon" aria-hidden="true">📈</span>
+          <h2 class="panel-title" id="results-heading">Results &amp; Metrics</h2>
+        </div>
+      </div>
+
+      <div class="panel-body">
+
+        <!-- Summary metric cards -->
+        <div class="metrics-grid" role="region" aria-label="Scheduling metrics summary">
+
+          <div class="metric-card" aria-label="Total jobs completed">
+            <div class="metric-label">Jobs Completed</div>
+            <div class="metric-value blue" id="metric-jobs-done">—</div>
+            <div class="metric-unit">of <span id="metric-jobs-total">—</span> released</div>
+          </div>
+
+          <div class="metric-card" aria-label="Deadline success rate">
+            <div class="metric-label">Deadlines Met</div>
+            <div class="metric-value green" id="metric-deadlines-met">—</div>
+            <div class="metric-unit">
+              <span id="metric-deadlines-pct">—</span>% success rate
+            </div>
+          </div>
+
+          <div class="metric-card" aria-label="Deadlines missed">
+            <div class="metric-label">Deadlines Missed</div>
+            <div class="metric-value red" id="metric-deadlines-missed">—</div>
+            <div class="metric-unit">jobs overran deadline</div>
+          </div>
+
+          <div class="metric-card" aria-label="CPU utilization">
+            <div class="metric-label">CPU Utilization</div>
+            <div class="metric-value cyan" id="metric-cpu-util">—</div>
+            <div class="metric-unit">% of simulated time</div>
+            <!-- mini utilization bar -->
+            <div class="utilization-bar-wrap mt-2">
+              <div class="utilization-bar-track" role="progressbar"
+                   aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+                   aria-label="CPU utilization bar">
+                <div class="utilization-bar-fill" id="util-bar"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="metric-card" aria-label="Average waiting time">
+            <div class="metric-label">Avg Waiting Time</div>
+            <div class="metric-value" id="metric-avg-wait">—</div>
+            <div class="metric-unit">time units (completed jobs)</div>
+          </div>
+
+          <div class="metric-card" aria-label="Average turnaround time">
+            <div class="metric-label">Avg Turnaround</div>
+            <div class="metric-value" id="metric-avg-turnaround">—</div>
+            <div class="metric-unit">time units (completed jobs)</div>
+          </div>
+
+        </div>
+
+        <!-- Metrics formula note -->
+        <div class="callout callout-info mt-4">
+          <span class="callout-icon">ℹ</span>
+          <span>
+            <strong>Formulas:</strong>
+            Turnaround = Completion − Release &nbsp;|&nbsp;
+            Waiting = Turnaround − Execution &nbsp;|&nbsp;
+            Utilisation = Busy ÷ Horizon × 100.
+            Incomplete jobs are excluded from averages but counted as missed.
+          </span>
+        </div>
+
+        <!-- Per-job breakdown table -->
+        <div class="results-table-wrapper" style="display:none;" id="results-table-wrapper">
+          <table class="results-table" id="results-table" aria-label="Per-job scheduling results">
+            <thead>
+              <tr>
+                <th scope="col">Job</th>
+                <th scope="col">Release</th>
+                <th scope="col">Start</th>
+                <th scope="col">Finish</th>
+                <th scope="col">Deadline</th>
+                <th scope="col">Turnaround</th>
+                <th scope="col">Wait</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody id="results-table-body">
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────
+         BOTTOM — E: Event Log
+    ──────────────────────────────────────────────── -->
+    <section class="panel section-event-log" aria-labelledby="event-log-heading">
+      <div class="panel-header">
+        <div class="panel-header-left">
+          <span class="panel-icon" aria-hidden="true">📜</span>
+          <h2 class="panel-title" id="event-log-heading">Event Log</h2>
+        </div>
+        <button id="btn-clear-log"
+                class="btn btn-ghost"
+                style="font-size:var(--text-xs); padding:3px 9px;"
+                aria-label="Clear event log">
+          🗑 Clear
+        </button>
+      </div>
+
+      <div class="panel-body" style="padding-bottom: var(--space-2);">
+        <div class="event-log-container"
+             id="event-log"
+             role="log"
+             aria-live="polite"
+             aria-label="Simulation event log">
+          <div class="event-log-empty" id="event-log-empty">
+            Events will appear here during simulation.
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ══════════════════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════════════════ -->
+  <footer class="app-footer" role="contentinfo">
+    <span>RTOS Task Scheduling Simulator — College OS Assignment</span>
+    <div class="footer-links">
+      <a href="tests/test-cases.md"
+         class="footer-link"
+         target="_blank"
+         rel="noopener">Test Cases</a>
+      <a href="README.md"
+         class="footer-link"
+         target="_blank"
+         rel="noopener">README</a>
+      <a href="https://github.com/aditya-vrm/RTOS"
+         class="footer-link"
+         target="_blank"
+         rel="noopener">GitHub ↗</a>
+    </div>
+  </footer>
+
+</div><!-- /#app -->
+
+<!-- Toast notification container -->
+<div class="toast-container" id="toast-container" role="region" aria-live="assertive" aria-label="Notifications"></div>
+
+<!-- JavaScript modules — loaded as ES modules -->
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

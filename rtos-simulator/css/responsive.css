@@ -1,0 +1,147 @@
+/* =========================================================
+   responsive.css — Breakpoint Overrides
+   Adapts the two-column layout for narrower viewports.
+   ========================================================= */
+
+/* ── Large screens (1400px+): relax the left column ──── */
+@media (min-width: 1400px) {
+  .app-main {
+    grid-template-columns: 420px 1fr;
+    padding: var(--space-8) var(--space-10);
+    gap: var(--space-6);
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ── Medium (≤1200px): compress left column ──────────── */
+@media (max-width: 1200px) {
+  .app-main {
+    grid-template-columns: 340px 1fr;
+    gap: var(--space-4);
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Tablet (≤960px): stack to single column ─────────── */
+@media (max-width: 960px) {
+  .app-main {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "task-config"
+      "task-list"
+      "scheduler-config"
+      "timeline"
+      "results"
+      "event-log";
+    padding: var(--space-4);
+  }
+
+  .app-header {
+    padding: var(--space-3) var(--space-4);
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .header-title { font-size: var(--text-lg); }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .sim-controls {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .sim-speed-group {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+/* ── Mobile (≤600px): compact layout ─────────────────── */
+@media (max-width: 600px) {
+  .app-main {
+    padding: var(--space-3);
+    gap: var(--space-3);
+  }
+
+  .panel-body { padding: var(--space-3); }
+
+  .app-header {
+    padding: var(--space-3);
+  }
+
+  .header-subtitle { display: none; }
+
+  .header-controls {
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .metric-value {
+    font-size: var(--text-xl);
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row-3 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .btn-group {
+    flex-wrap: wrap;
+  }
+
+  .algo-cards {
+    gap: var(--space-1);
+  }
+
+  .event-log-container {
+    height: 160px;
+  }
+
+  .app-footer {
+    flex-direction: column;
+    gap: var(--space-2);
+    text-align: center;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .task-table th:nth-child(n+5),
+  .task-table td:nth-child(n+5) {
+    display: none; /* hide less critical columns on mobile */
+  }
+}
+
+/* ── Print styles ────────────────────────────────────── */
+@media print {
+  .app-header { position: static; }
+  .sim-controls,
+  .btn,
+  .toast-container { display: none !important; }
+  .app-main {
+    grid-template-columns: 1fr;
+    padding: 0;
+  }
+  .panel {
+    break-inside: avoid;
+    border-color: #ccc;
+  }
+  body {
+    background: white;
+    color: black;
+  }
+}
