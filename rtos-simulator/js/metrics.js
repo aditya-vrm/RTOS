@@ -48,17 +48,61 @@
  * @returns {Object} Metrics object
  */
 export function computeMetrics(jobs, history, horizon) {
-  // Will be fully implemented in Phase 5.
-  console.warn('[metrics] computeMetrics() not yet implemented (Phase 5).');
+  const jobsReleased = jobs.length;
+
+  const completedJobs = jobs.filter(j => j.completionTime !== null);
+  const jobsCompleted = completedJobs.length;
+
+  // Deadline evaluation: jobs whose deadline falls within the horizon
+  const evaluatedJobs = jobs.filter(j =>
+    j.absoluteDeadline !== Infinity && j.absoluteDeadline <= horizon
+  );
+  const deadlinesMet    = evaluatedJobs.filter(j => !j.deadlineMissed).length;
+  const deadlinesMissed = evaluatedJobs.filter(j => j.deadlineMissed).length;
+  const deadlineSuccessRate = evaluatedJobs.length > 0
+    ? Math.round((deadlinesMet / evaluatedJobs.length) * 100)
+    : 100;
+
+  // CPU utilisation
+  const busyTime = history
+    .filter(i => i.jobId !== '__idle__')
+    .reduce((sum, i) => sum + (i.end - i.start), 0);
+  const cpuUtilization = Math.round((busyTime / horizon) * 100);
+
+  // Per-completed-job metrics
+  const jobDetails = completedJobs.map(j => {
+    const turnaround = j.completionTime - j.releaseTime;
+    const waiting    = turnaround - j.executionTime;
+    return {
+      jobId:        j.id,
+      taskName:     j.taskName,
+      jobIndex:     j.jobIndex,
+      releaseTime:  j.releaseTime,
+      startTime:    j.startTime,
+      completionTime: j.completionTime,
+      absoluteDeadline: j.absoluteDeadline,
+      turnaround,
+      waiting,
+      deadlineMissed: j.deadlineMissed,
+    };
+  });
+
+  const avgWaitingTime = jobsCompleted > 0
+    ? +(jobDetails.reduce((s, j) => s + j.waiting, 0) / jobsCompleted).toFixed(2)
+    : null;
+  const avgTurnaround = jobsCompleted > 0
+    ? +(jobDetails.reduce((s, j) => s + j.turnaround, 0) / jobsCompleted).toFixed(2)
+    : null;
+
   return {
-    jobsReleased:       0,
-    jobsCompleted:      0,
-    deadlinesMet:       0,
-    deadlinesMissed:    0,
-    deadlineSuccessRate: 0,
-    cpuUtilization:     0,
-    avgWaitingTime:     null,
-    avgTurnaround:      null,
-    jobDetails:         [],
+    jobsReleased,
+    jobsCompleted,
+    deadlinesMet,
+    deadlinesMissed,
+    deadlineSuccessRate,
+    cpuUtilization,
+    avgWaitingTime,
+    avgTurnaround,
+    jobDetails,
   };
 }
